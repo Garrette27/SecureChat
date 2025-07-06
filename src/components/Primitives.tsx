@@ -1,72 +1,53 @@
-import styled from 'styled-components';
+// src/components/Primitives.tsx
+import React from 'react';
 
-export const Button = styled.button`
-    font-family: 'Muller';
-    font-size: 14px;
-    display: inline-flex;
-    justify-content: center;
-    height: 44px;
-    transition: all 0.5s;
-    text-transform: uppercase;
-    border: 0;
-    border-radius: 3px;
-    align-items: center;
-`;
+interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+  children: React.ReactNode;
+}
 
-export const PrimaryButton = styled(Button)`
-    color: white;
-    background-color: #6366f1; /* indigo-500 */
-    box-shadow: 0 4px 14px rgba(99, 102, 241, 0.4);
-    padding: 0 25px;
+export const PrimaryButton: React.FC<ButtonProps> = ({ children, ...props }) => {
+  return (
+    <button
+      className="uppercase font-muller text-sm h-11 inline-flex justify-center items-center rounded px-6 text-white bg-indigo-500 hover:bg-indigo-600 shadow-md disabled:opacity-50 transition"
+      {...props}
+    >
+      {children}
+    </button>
+  );
+};
 
-    &:hover:not(:disabled) {
-        background-color: #4f46e5; /* indigo-600 */
-    }
+export const SecondaryButton: React.FC<ButtonProps> = ({ children, ...props }) => {
+  return (
+    <button
+      className="uppercase font-muller text-sm inline-block py-4 px-5 text-[#9e3621] disabled:text-gray-300"
+      {...props}
+    >
+      {children}
+    </button>
+  );
+};
 
-    &:disabled {
-        opacity: 0.5;
-    }
-`;
+interface LinkButtonProps extends React.AnchorHTMLAttributes<HTMLAnchorElement> {
+  children: React.ReactNode;
+  color?: string;
+}
 
+export const LinkButton: React.FC<LinkButtonProps> = ({ children, color = 'white', ...props }) => {
+  return (
+    <a
+      className="uppercase font-muller inline-block py-4 px-5 hover:bg-white/10 transition cursor-pointer"
+      style={{ color }}
+      {...props}
+    >
+      {children}
+    </a>
+  );
+};
 
-export const SecondaryButton = styled(Button)`
-    --webkit-appearance: none;
-    border: 0;
-    display: inline-block;
-    padding: 16px 19px;
-    color: #9e3621;
-    margin: 2px;
-    font-family: Muller;
-    text-transform: uppercase;
-    text-decoration: none;
-
-    &:disabled {
-        color: #ebebeb;
-    }
-`;
-
-export const Avatar = styled.div`
-    height: 50px;
-    width: 50px;
-    line-height: 50px;
-    border-radius: 50px;
-    text-align: center;
-    font-size: 24px;
-    background-color: lightgray;
-`;
-
-export const LinkButton = styled.a`
-    --webkit-appearance: none;
-    border: 0;
-    display: inline-block;
-    padding: 16px 19px;
-    color: ${props => props.color};
-    font-family: Muller;
-    text-transform: uppercase;
-    text-decoration: none;
-
-    &:hover {
-        cursor: pointer;
-        background-color: rgba(255, 255, 255, 0.1)
-    }
-`
+export const Avatar: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  return (
+    <div className="h-[50px] w-[50px] leading-[50px] rounded-full text-center text-xl bg-gray-300">
+      {children}
+    </div>
+  );
+};

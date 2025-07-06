@@ -20,7 +20,6 @@ class UserApi {
                 if (eThree && await eThree.hasLocalPrivateKey()) {
                     this.openChatWindow(user.email!, eThree);
                 } else {
-                    // still allow opening chat even without eThree
                     this.openChatWindow(user.email!, null);
                 }
             } else {
@@ -33,10 +32,8 @@ class UserApi {
     }
 
     async signUp(email: string, password: string, brainkeyPassword: string) {
-        email = email.toLocaleLowerCase();
-
+        email = email.toLowerCase();
         const userInfo = await firebase.auth().createUserWithEmailAndPassword(email, password);
-
         const eThree = await this.eThree;
 
         try {
@@ -44,11 +41,10 @@ class UserApi {
                 await eThree.register();
                 await eThree.backupPrivateKey(brainkeyPassword);
             }
-            await this.collectionRef.doc(email).set({
-                createdAt: new Date(),
-                uid: userInfo.user!.uid,
-                channels: [],
-            });
+
+            // ✅ Ensure Firestore document is created for this user
+            await this.ensureUserDocument(userInfo.user!.uid, email);
+
             this.openChatWindow(email, eThree);
         } catch (error) {
             await userInfo.user!.delete();
@@ -58,16 +54,19 @@ class UserApi {
     }
 
     async signIn(email: string, password: string, brainkeyPassword: string) {
-        email = email.toLocaleLowerCase();
-
-        await firebase.auth().signInWithEmailAndPassword(email, password);
-
+        email = email.toLowerCase();
+        const userInfo = await firebase.auth().signInWithEmailAndPassword(email, password);
         const eThree = await this.eThree;
+
         try {
             if (eThree) {
                 const hasPrivateKey = await eThree.hasLocalPrivateKey();
                 if (!hasPrivateKey) await eThree.restorePrivateKey(brainkeyPassword);
             }
+
+            // ✅ Ensure Firestore document is created for this user if missing
+            await this.ensureUserDocument(userInfo.user!.uid, email);
+
             this.openChatWindow(email, eThree);
         } catch (e) {
             firebase.auth().signOut();
@@ -78,6 +77,20 @@ class UserApi {
     async openChatWindow(email: string, eThree: EThree | null) {
         const chatModel = new ChatModel(this.state, email, eThree);
         this.state.setState({ chatModel, email });
+    }
+
+    // ✅ Helper to create the Firestore user document if it doesn't exist
+    private async ensureUserDocument(uid: string, email: string) {
+        const userRef = this.collectionRef.doc(email);
+        const userDoc = await userRef.get();
+        if (!userDoc.exists) {
+            await userRef.set({
+                uid,
+                email,
+                createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                channels: [],
+            });
+        }
     }
 }
 

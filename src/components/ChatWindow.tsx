@@ -74,17 +74,25 @@ export default class ChatPage extends React.Component<IChatPageProps> {
         try {
             await this.model.channelsList.createChannel(receiver);
         } catch (e) {
-            alert(e.message);
+            if (e instanceof Error) {
+                alert(e.message);
+            } else {
+                alert('An unknown error occurred while creating channel.');
+            }
         }
     };
 
     sendMessage = async (message: string) => {
         try {
-            await this.model.sendMessage(message)
+            await this.model.sendMessage(message);
         } catch (e) {
-            alert(e);
+            if (e instanceof Error) {
+                alert(e.message);
+            } else {
+                alert('An unknown error occurred while sending message.');
+            }
         }
-    }
+    };
 
     selectChannel = (channelInfo: IChannel) => this.model.listenMessages(channelInfo);
 

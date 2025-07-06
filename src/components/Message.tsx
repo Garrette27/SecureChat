@@ -1,55 +1,28 @@
+// src/components/Message.tsx
 import * as React from 'react';
-import styled from 'styled-components';
 import { Avatar } from './Primitives';
 import format from 'date-fns/format';
 import { IMessage } from '../models/MessageListModel';
 
-const MessageContainer = styled.div`
-    width: 100%;
-    min-height: 100px;
-    display: flex;
-`
-
-const MessageContent = styled.div`
-    display: flex;
-    flex-direction: column;
-    flex: 1 0 auto;
-    max-width: calc(100% - 100px);
-`
-
-const MessageHeader = styled.span`
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-`
-
-const MessageBody = styled.div`
-    overflow: hidden;
-    word-break: break-all;
-`
-
-const MessageAvatar = styled(Avatar)`
-    margin: 25px;
-    flex: 0 0 auto;
-`
-
-
-export interface IMessageProps {
-    message: IMessage;
+interface IMessageProps {
+  message: IMessage;
 }
 
 export default function Message({ message }: IMessageProps) {
-    return (
-        <MessageContainer>
-            <MessageAvatar>{message.sender.slice(0, 2).toUpperCase()}</MessageAvatar>
-            <MessageContent>
-                <MessageHeader>
-                    <h3>{message.sender}</h3>
-                    <span>{format(message.createdAt, 'HH:mm:ss')}</span>
-                </MessageHeader>
-                <MessageBody>{message.body === '' ? '*Message Deleted*' : message.body}</MessageBody>
-            </MessageContent>
-        </MessageContainer>
-    );
-
+  return (
+    <div className="w-full min-h-[100px] flex">
+      <div className="mr-6 flex-none">
+        <Avatar>{message.sender.slice(0, 2).toUpperCase()}</Avatar>
+      </div>
+      <div className="flex-1 max-w-[calc(100%-100px)] flex flex-col">
+        <div className="flex justify-between items-center">
+          <h3 className="font-semibold">{message.sender}</h3>
+          <span className="text-sm text-gray-400">{format(message.createdAt, 'HH:mm:ss')}</span>
+        </div>
+        <div className="break-words text-gray-700">
+          {message.body === '' ? '*Message Deleted*' : message.body}
+        </div>
+      </div>
+    </div>
+  );
 }

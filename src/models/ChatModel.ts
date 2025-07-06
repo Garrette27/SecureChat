@@ -18,7 +18,7 @@ export class ChatModel {
     sendMessage = async (message: string) => {
         if (!this.store.state.currentChannel) throw Error('set channel first');
         const currentChannel = this.channelsList.getChannel(this.store.state.currentChannel.id);
- 
+
         return await currentChannel.sendMessage(message);
     };
 
@@ -38,6 +38,20 @@ export class ChatModel {
 
     private async listenChannels(username: string) {
         if (this.channelsListener) this.channelsListener();
+
+        // ✅ PATCH: Ensure user doc exists for testing
+        const userRef = firebase.firestore().collection('Users').doc(username);
+        const userDoc = await userRef.get();
+
+        if (!userDoc.exists) {
+            console.warn(`Creating test user doc for ${username}`);
+            await userRef.set({
+                createdAt: new Date(),
+                uid: null,
+                channels: [],
+            });
+        }
+
         this.channelsListener = this.channelsList.listenUpdates(username, channels =>
             this.store.setState({ channels }),
         );
