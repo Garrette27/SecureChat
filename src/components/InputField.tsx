@@ -2,34 +2,33 @@ import React from 'react';
 import styled from 'styled-components';
 
 const Label = styled.label`
-    font-size: 11px;
-    font-family: 'Muller';
-    text-transform: uppercase;
-    font-weight: bold;
-    color: #a6a6a6;
+    font-size: 12px;
+    font-family: 'Lato', sans-serif;
+    font-weight: 600;
+    color: #6b7280;
+    margin-bottom: 10px;
     display: flex;
     flex-direction: column;
-    width: 100%;
-
-    &:nth-child(n + 1) {
-        margin-bottom: 20px;
-    }
 `;
+
 
 const Input = styled.input`
-    border: 1px solid #a6a6a6;
-    color: #333;
-    border-radius: 3px;
-    padding: 0 16px;
-    height: 44px;
-    margin-top: 10px;
-    width: 100%;
-    display: inline-block;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    padding: 10px 14px;
+    font-size: 16px;
+    outline: none;
 
     &:hover {
-        border: 1px solid #333;
+        border-color: #9ca3af;
+    }
+
+    &:focus {
+        border-color: #6366f1;
+        box-shadow: 0 0 0 1px #6366f1;
     }
 `;
+
 
 export interface IInputFieldProps extends React.InputHTMLAttributes<HTMLInputElement> {
     label: string;

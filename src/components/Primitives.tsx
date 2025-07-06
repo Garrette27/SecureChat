@@ -15,18 +15,19 @@ export const Button = styled.button`
 
 export const PrimaryButton = styled(Button)`
     color: white;
-    background-color: #9e3621;
-    box-shadow: 0 15px 20px -15px rgba(158, 54, 33, 0.5);
+    background-color: #6366f1; /* indigo-500 */
+    box-shadow: 0 4px 14px rgba(99, 102, 241, 0.4);
     padding: 0 25px;
 
     &:hover:not(:disabled) {
-        background-color: #da322c;
+        background-color: #4f46e5; /* indigo-600 */
     }
 
     &:disabled {
         opacity: 0.5;
     }
 `;
+
 
 export const SecondaryButton = styled(Button)`
     --webkit-appearance: none;

@@ -10,11 +10,14 @@ export const ChatContainer = styled.div`
 
 export const Header = styled.header`
     width: 100%;
-    height: 50px;
-    background-color: #9e3621;
+    height: 56px;
+    background-color: #4f46e5;
     display: flex;
     justify-content: space-between;
+    align-items: center;
+    padding: 0 20px;
 `;
+
 
 export const ChatLayout = styled.div`
     display: flex;

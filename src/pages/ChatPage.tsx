@@ -46,9 +46,11 @@ export default class ChatPage extends React.Component<IChatPageProps> {
         return (
             <ChatContainer>
                 <Header>
-                    <LinkButton color="white" href="https://virgilsecurity.com/" target="_blank">
-                        Virgilgram
+                    <LinkButton color="white" href="#">
+                      SecureChat AI
                     </LinkButton>
+
+                    
                     <RightSide>
                         {this.props.model.email}
                         <LinkButton color="white" onClick={this.signOut}>
