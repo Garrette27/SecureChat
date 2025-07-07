@@ -1,5 +1,6 @@
 import { FirebaseCollections } from './helpers/FirebaseCollections';
 import firebase from 'firebase/app';
+import 'firebase/firestore'; // Ensure Firestore features are included
 import ChannelModel, { IChannel } from './ChannelModel';
 import { EThree } from '@virgilsecurity/e3kit-browser';
 import { base64UrlFromBase64 } from './helpers/base64UrlFromBase64';
@@ -19,17 +20,44 @@ export default class ChannelListModel {
 
     listenUpdates(senderUsername: string, cb: (channels: ChannelModel[]) => void) {
         return ChannelListModel.userCollectionRef.doc(senderUsername).onSnapshot(async snapshot => {
-            const channelIds = snapshot.data()!.channels as string[];
+            const data = snapshot.data();
+            if (!data || !data.channels) {
+                console.warn(`[ChannelListModel] No channels found for user: ${senderUsername}`);
+                cb([]);
+                return;
+            }
 
-            const channelsRefs = await Promise.all(
-                channelIds.map((id: string) => ChannelListModel.channelCollectionRef.doc(id).get()),
-            );
+            const channelIds = data.channels as string[];
 
-            const channels = channelsRefs.map(this.getChannelFromSnapshot);
-            this.channels = channels.map(
-                channel => new ChannelModel(channel, senderUsername, this.e3kit),
-            );
-            cb(this.channels);
+            try {
+                const channelsRefs = await Promise.all(
+                    channelIds.map((id: string) =>
+                        ChannelListModel.channelCollectionRef.doc(id).get()
+                    )
+                );
+
+                const channels = channelsRefs
+                    .filter(doc => doc.exists)
+                    .map(this.getChannelFromSnapshot);
+
+                this.channels = channels.map(channel => {
+                    try {
+                        return new ChannelModel(channel, senderUsername, this.e3kit);
+                    } catch (err) {
+                        console.error(
+                            '[ChannelListModel] Error initializing ChannelModel for channel:',
+                            channel.id,
+                            err
+                        );
+                        return null;
+                    }
+                }).filter(Boolean) as ChannelModel[];
+
+                cb(this.channels);
+            } catch (error) {
+                console.error('[ChannelListModel] Error loading channel data:', error);
+                cb([]);
+            }
         });
     }
 
@@ -61,8 +89,8 @@ export default class ChannelListModel {
         const channelRef = ChannelListModel.channelCollectionRef.doc(channelId);
 
         return await firebase.firestore().runTransaction(async transaction => {
-            const senderChannels = senderDoc.data()!.channels;
-            const receiverChannels = receiverDoc.data()!.channels;
+            const senderChannels = senderDoc.data()!.channels || [];
+            const receiverChannels = receiverDoc.data()!.channels || [];
 
             transaction.set(channelRef, {
                 count: 0,
@@ -73,11 +101,11 @@ export default class ChannelListModel {
             });
 
             transaction.update(senderRef, {
-                channels: senderChannels ? senderChannels.concat(channelId) : [channelId],
+                channels: [...new Set([...senderChannels, channelId])],
             });
 
             transaction.update(receiverRef, {
-                channels: receiverChannels ? receiverChannels.concat(channelId) : [channelId],
+                channels: [...new Set([...receiverChannels, channelId])],
             });
 
             return transaction;
