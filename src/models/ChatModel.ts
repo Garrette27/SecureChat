@@ -1,61 +1,72 @@
-import AppStore from './AppState';
-import firebase from 'firebase/app';
-import ChannelListModel from './ChannelListModel';
-import { IChannel } from './ChannelModel';
+// src/models/ChatModel.ts
+import * as firebase from 'firebase';
 import { EThree } from '@virgilsecurity/e3kit-browser';
+import AppStore from './AppState';
+import ChannelListModel from './ChannelListModel';
 
-export class ChatModel {
-    channelsList: ChannelListModel;
+export default class ChatModel {
+  channelsList: ChannelListModel;
+  channelsListener?: () => void;
+  messageListener?: firebase.Unsubscribe;
+  private virgilE2ee: EThree;
 
-    channelsListener?: firebase.Unsubscribe;
-    messageListener?: firebase.Unsubscribe;
-    
-    constructor(public store: AppStore, public email: string, virgilE2ee: EThree) {
-        this.channelsList = new ChannelListModel(email, virgilE2ee);
-        this.listenChannels(email);
+  constructor(public store: AppStore, public email: string, eThree: EThree | null) {
+    if (!eThree) {
+      throw new Error('[ChatModel] EThree instance is required but was null');
     }
 
-    sendMessage = async (message: string) => {
-        if (!this.store.state.currentChannel) throw Error('set channel first');
-        const currentChannel = this.channelsList.getChannel(this.store.state.currentChannel.id);
+    this.virgilE2ee = eThree;
+    this.channelsList = new ChannelListModel(email, this.virgilE2ee);
+    this.listenChannels(email);
+  }
 
-        return await currentChannel.sendMessage(message);
-    };
-
-    listenMessages = async (channel: IChannel) => {
-        if (this.messageListener) this.messageListener();
-        const channelModel = this.channelsList.getChannel(channel.id);
-        this.store.setState({ currentChannel: channel, messages: [] });
-        this.messageListener = channelModel.listenMessages(messages =>
-            this.store.setState({ messages }),
-        );
-    };
-
-    unsubscribe() {
-        if (this.channelsListener) this.channelsListener();
-        if (this.messageListener) this.messageListener();
+  sendMessage = async (message: string) => {
+    if (!this.store.state.currentChannel) {
+      throw Error('[ChatModel] No channel selected');
     }
 
-    private async listenChannels(username: string) {
-        if (this.channelsListener) this.channelsListener();
+    const currentChannel = this.channelsList.getChannel(this.store.state.currentChannel.id);
+    return await currentChannel.sendMessage(message);
+  };
 
-        // ✅ PATCH: Ensure user doc exists for testing
-        const userRef = firebase.firestore().collection('Users').doc(username);
-        const userDoc = await userRef.get();
+  listenChannels(email: string) {
+    // 🔁 Subscribe to user’s channels
+    this.channelsListener = this.channelsList.listenUpdates(email, (channels) => {
+      console.log('[ChatModel] Channels updated:', channels);
 
-        if (!userDoc.exists) {
-            console.warn(`Creating test user doc for ${username}`);
-            await userRef.set({
-                createdAt: new Date(),
-                uid: null,
-                channels: [],
-            });
-        }
+      this.store.setState({ channels });
 
-        this.channelsListener = this.channelsList.listenUpdates(username, channels =>
-            this.store.setState({ channels }),
-        );
+      // Optional: auto-select first channel
+      if (!this.store.state.currentChannel && channels.length > 0) {
+        this.store.setState({ currentChannel: channels[0] });
+        this.listenMessages(channels[0].id);
+      }
+    });
+  }
+
+  listenMessages(channelId: string) {
+    if (this.messageListener) {
+      this.messageListener(); // Unsubscribe previous
     }
+
+    // ✅ Firestore listener to updates in this channel’s messages
+    this.messageListener = firebase
+      .firestore()
+      .collection('channels')
+      .doc(channelId)
+      .collection('messages')
+      .orderBy('createdAt')
+      .onSnapshot(snapshot => {
+        const currentChannel = this.channelsList.getChannel(channelId);
+        currentChannel.updateMessages(snapshot);
+
+        const messages = currentChannel.messageList.getMessages();
+        this.store.setState({ messages, currentChannel });
+      });
+  }
+
+  unsubscribe() {
+    if (this.channelsListener) this.channelsListener();
+    if (this.messageListener) this.messageListener();
+  }
 }
-
-export default ChatModel;

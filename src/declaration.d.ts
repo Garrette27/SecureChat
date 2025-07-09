@@ -1,5 +1,4 @@
 declare module 'virgil-crypto/dist/virgil-crypto-pythia.es' {
-    export * from 'virgil-crypto/dist/types/pythia';
   }
 
 declare module 'virgil-pythia' {

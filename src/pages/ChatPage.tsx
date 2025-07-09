@@ -1,4 +1,3 @@
-// src/pages/ChatPage.tsx
 import React from 'react';
 import firebase from 'firebase/app';
 import ChatModel from '../models/ChatModel';
@@ -25,7 +24,7 @@ export interface IChatPageProps {
 
 export default class ChatPage extends React.Component<IChatPageProps> {
   componentWillUnmount() {
-    this.props.model.unsubscribe();
+    this.props.model.stopListening(); // ✅ should be `stopListening()` not `unsubscribe()`
   }
 
   createChannel = async () => {
@@ -49,8 +48,10 @@ export default class ChatPage extends React.Component<IChatPageProps> {
     }
   };
 
-  selectChannel = (channelInfo: IChannel) =>
-    this.props.model.listenMessages(channelInfo);
+  selectChannel = (channel: IChannel) => {
+    this.props.store.setState({ currentChannel: channel }); // ✅ ensure channel is stored
+    this.props.model.listenMessages(channel.id);             // ✅ pass channel ID, not the object
+  };
 
   signOut = () => firebase.auth().signOut();
 
