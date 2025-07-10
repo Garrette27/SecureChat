@@ -1,3 +1,4 @@
+// src/models/UserApi.ts
 import * as firebase from 'firebase/app';
 import 'firebase/auth';
 import 'firebase/firestore';
@@ -49,6 +50,13 @@ class UserApi {
 
     try {
       if (eThree) {
+        try {
+          await eThree.unregister(); // 🔥 Try to unregister previous card
+          console.log('[UserApi] Unregistered old Virgil card');
+        } catch (err) {
+          console.warn('[UserApi] unregister() failed or not needed:', err);
+        }
+
         await eThree.register();
         await eThree.backupPrivateKey(brainkeyPassword);
         console.log('[UserApi] Registered and backed up key for', email);

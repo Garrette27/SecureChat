@@ -30,13 +30,10 @@ export default class ChatModel {
   };
 
   listenChannels(email: string) {
-    // 🔁 Subscribe to user’s channels
     this.channelsListener = this.channelsList.listenUpdates(email, (channels) => {
       console.log('[ChatModel] Channels updated:', channels);
-
       this.store.setState({ channels });
 
-      // Optional: auto-select first channel
       if (!this.store.state.currentChannel && channels.length > 0) {
         this.store.setState({ currentChannel: channels[0] });
         this.listenMessages(channels[0].id);
@@ -46,10 +43,9 @@ export default class ChatModel {
 
   listenMessages(channelId: string) {
     if (this.messageListener) {
-      this.messageListener(); // Unsubscribe previous
+      this.messageListener();
     }
 
-    // ✅ Firestore listener to updates in this channel’s messages
     this.messageListener = firebase
       .firestore()
       .collection('channels')
@@ -68,5 +64,9 @@ export default class ChatModel {
   unsubscribe() {
     if (this.channelsListener) this.channelsListener();
     if (this.messageListener) this.messageListener();
+  }
+
+  getVirgilInstance(): EThree {
+    return this.virgilE2ee;
   }
 }

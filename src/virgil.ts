@@ -1,4 +1,5 @@
 // src/virgil.ts
+
 import { EThree } from '@virgilsecurity/e3kit-browser';
 import firebase from 'firebase/app';
 import 'firebase/functions';
@@ -7,7 +8,7 @@ import { initCrypto } from 'virgil-crypto';
 export async function initEThree(identity: string): Promise<EThree> {
   console.log("initEThree called with:", identity);
 
-  await initCrypto(); // ✅ Required before using EThree
+  await initCrypto();
 
   const getVirgilJwt = firebase.functions().httpsCallable('getVirgilToken');
   const response = await getVirgilJwt({ identity });
@@ -17,24 +18,39 @@ export async function initEThree(identity: string): Promise<EThree> {
   console.log("EThree initialized for:", identity);
 
   try {
+    // ✅ Attempt unregister, but handle if not registered yet
+    try {
+      await eThree.unregister();
+      console.log('[virgil.ts] Existing Virgil card unregistered');
+    } catch (unregErr: any) {
+      if (unregErr.name === 'RegisterRequiredError') {
+        console.warn('[virgil.ts] Cannot unregister — identity not registered yet');
+      } else {
+        throw unregErr;
+      }
+    }
+
     await eThree.register();
-    console.log("EThree registration complete");
+    console.log('[virgil.ts] Registered new Virgil card');
   } catch (err: any) {
     if (err.name === 'IdentityAlreadyExistsError') {
-      console.log("EThree identity exists — restoring private key");
+      console.warn('[virgil.ts] IdentityAlreadyExistsError — restoring key');
 
       const hasLocalKey = await eThree.hasLocalPrivateKey();
       if (!hasLocalKey) {
-        await eThree.restorePrivateKey(); // ✅ Only if not already stored
-        console.log("Private key restored from cloud");
+        await eThree.restorePrivateKey();
+        console.log('[virgil.ts] Private key restored');
       } else {
-        console.log("Local private key found — no restore needed");
+        console.log('[virgil.ts] Local key exists');
       }
+    } else if (err.name === 'MultipleCardsError') {
+      console.error('[virgil.ts] ❌ MultipleCardsError: clean-up failed, contact admin or reset identity manually');
+      throw err;
     } else {
-      throw err; // ❌ Let other errors bubble up
+      console.error('[virgil.ts] Unhandled error:', err);
+      throw err;
     }
   }
 
-  window.virgilE2ee = eThree; // ✅ Make it globally available if needed
   return eThree;
 }

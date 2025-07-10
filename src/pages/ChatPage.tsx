@@ -24,7 +24,7 @@ export interface IChatPageProps {
 
 export default class ChatPage extends React.Component<IChatPageProps> {
   componentWillUnmount() {
-    this.props.model.stopListening(); // ✅ should be `stopListening()` not `unsubscribe()`
+    this.props.model.unsubscribe(); // ✅ Stop listeners
   }
 
   createChannel = async () => {
@@ -49,11 +49,45 @@ export default class ChatPage extends React.Component<IChatPageProps> {
   };
 
   selectChannel = (channel: IChannel) => {
-    this.props.store.setState({ currentChannel: channel }); // ✅ ensure channel is stored
-    this.props.model.listenMessages(channel.id);             // ✅ pass channel ID, not the object
+    this.props.store.setState({ currentChannel: channel });
+    this.props.model.listenMessages(channel.id);
   };
 
-  signOut = () => firebase.auth().signOut();
+  signOut = async () => {
+    try {
+      const eThree = this.props.model.getVirgilInstance?.();
+      if (eThree) {
+        // ✅ Safely try to unregister if registered
+        try {
+          await eThree.unregister();
+          console.log('[ChatPage] Virgil card unregistered');
+        } catch (unregErr: any) {
+          if (unregErr.name === 'RegisterRequiredError') {
+            console.warn('[ChatPage] Cannot unregister — identity not registered');
+          } else {
+            console.warn('[ChatPage] Failed to unregister:', unregErr);
+          }
+        }
+
+        try {
+          await eThree.cleanup();
+          console.log('[ChatPage] Local private key cleaned up');
+        } catch (cleanupErr) {
+          console.warn('[ChatPage] Cleanup failed:', cleanupErr);
+        }
+      }
+    } catch (err) {
+      console.warn('[ChatPage] Error accessing EThree instance:', err);
+    }
+
+    try {
+      this.props.model.unsubscribe(); // ✅ Stop Firestore listeners
+      await firebase.auth().signOut(); // ✅ Firebase sign-out
+      console.log('[ChatPage] Firebase sign-out complete');
+    } catch (signOutErr) {
+      console.error('[ChatPage] Sign-out failed:', signOutErr);
+    }
+  };
 
   render() {
     if (this.props.store.error) alert(this.props.store.error);
